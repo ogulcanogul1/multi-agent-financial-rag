@@ -1,6 +1,7 @@
 from src.loaders.text_loader import LocalTextLoader
 from src.preprocess.cleaner import TextCleaner
-from src.preprocess.chunking.fixed_chunker import FixedChunker # Kendi yazdığın splitter
+from src.preprocess.chunking.fixed_chunker import FixedChunker 
+from src.embeddings.huggingface import HuggingFaceEmbedder
 
 
 def main():
@@ -30,5 +31,23 @@ def main():
         print(f"Token Count: {len(chunk.text.split())}") # Basit kontrol
 
     print(final_chunks[-1].metadata)
+
+    embedder = HuggingFaceEmbedder()
+
+    content = [chunk.text for chunk in final_chunks]
+
+    embeedings =embedder.embed_documents(content)
+
+    len(embeedings)
+
+
+    for chunk,vector in zip(final_chunks,embeedings):
+        chunk.embedding = vector
+
+    print(final_chunks[0].embedding)
+    print(len(final_chunks[0].embedding))
+        
+
+
 if __name__ == "__main__":
     main()

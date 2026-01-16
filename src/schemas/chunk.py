@@ -1,4 +1,4 @@
-from typing import Optional,Dict
+from typing import Optional, Dict, List
 
 
 class Chunk:
@@ -10,7 +10,8 @@ class Chunk:
             parent_doc_id:str,
             start_offset:int,
             end_offset:int,
-            metadata:Optional[Dict]
+            metadata:Optional[Dict],
+            embedding:Optional[List[float]] = None
             ):
         
         self.chunk_id = chunk_id
@@ -19,6 +20,7 @@ class Chunk:
         self.start_offset = start_offset
         self.end_offset = end_offset
         self.metadata = metadata
+        self.embedding = embedding
     
 
     def __repr__(self) -> str:
