@@ -1,4 +1,4 @@
-import uuid 
+import hashlib
 from typing import List
 
 from src.schemas.document import Document
@@ -19,9 +19,10 @@ class FixedChunker:
             raw_chunks: List[SplitChunk] = self.text_splitter.split(doc.content)
 
             for idx, raw_chunk in enumerate(raw_chunks):
-                # Benzersiz chunk ID oluşturma
-                # document.doc_id alanının varlığından emin ol (veya doc.id kullan)
-                chunk_id = f"{doc.id}_{idx}_{uuid.uuid4().hex[:8]}"
+                
+                # uuid kullanma çünkü aynı dökümanın her seferinde aynı id gelmesi lazım (eğer bir değişiklik yapılmadıysa,chunk_size,overlap).
+                content_hash = hashlib.md5(raw_chunk.text.encode()).hexdigest()[:8]
+                chunk_id = f"{doc.id}_{idx}_{content_hash}"
 
                 chunk = Chunk(
                     chunk_id=chunk_id,
