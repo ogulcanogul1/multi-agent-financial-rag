@@ -1,53 +1,56 @@
+import os
+import pickle
 from src.loaders.text_loader import LocalTextLoader
 from src.preprocess.cleaner import TextCleaner
 from src.preprocess.chunking.fixed_chunker import FixedChunker 
 from src.embeddings.huggingface import HuggingFaceEmbedder
+from src.vectorstores.pinecone_db import PineconeVectorStore # Bunu ekledik
+from src.settings.configurations import PINECONE_API_KEY,PINECONE_INDEX_NAME 
 
-
-def main():
-    # 1. Load: Raw veriyi oku
+def run_ingestion(namespace:str="txt"):
+    # Load
     loader = LocalTextLoader()
     raw_docs = loader.load()
     print(f"Loaded {len(raw_docs)} raw documents.")
 
-    # 2. Clean: Veriyi temizle
+    # Clean
     cleaner = TextCleaner()
     cleaned_docs = [cleaner.clean(doc) for doc in raw_docs]
-    print(f"cleaned docs :{len(cleaned_docs)}")
+    print(f"Cleaned docs: {len(cleaned_docs)}")
     
-    # 3. Split: Chunk'lara ayır
+    # Split: 
     splitter = FixedChunker(chunk_size=500, overlap=50)
-
-    
     final_chunks = splitter.split_documents(cleaned_docs)
-    
     print(f"Total chunks created: {len(final_chunks)}")
     
-    # 4. Veri Kontrolü (Görsel Test)
-    for i, chunk in enumerate(final_chunks[:3]): # İlk 3 chunk'ı kontrol et
-        print(f"--- Chunk {i} ---")
-        print(f"Content: {chunk.text[:100]}...")
-        print(f"Metadata: {chunk.metadata}")
-        print(f"Token Count: {len(chunk.text.split())}") # Basit kontrol
-
-    print(final_chunks[-1].metadata)
-
+    # Embeddings
     embedder = HuggingFaceEmbedder()
-
     content = [chunk.text for chunk in final_chunks]
+    embeddings = embedder.embed_documents(content)
 
-    embeedings =embedder.embed_documents(content)
-
-    len(embeedings)
-
-
-    for chunk,vector in zip(final_chunks,embeedings):
+    for chunk, vector in zip(final_chunks, embeddings):
         chunk.embedding = vector
 
-    print(final_chunks[0].embedding)
-    print(len(final_chunks[0].embedding))
-        
+    # Vector DB: Pinecone'a Upsert (Yükleme)
+    # NOT: API Key ve Index Name bilgilerini kendi bilgilerinizle güncelleyin
+    v_store = PineconeVectorStore(
+        api_key=PINECONE_API_KEY, 
+        index_name=PINECONE_INDEX_NAME,
+        namespace=namespace
+    )
+    
+    print("Uploading vectors to Pinecone...")
+    v_store.upsert_chunks(final_chunks)
+    print("Pinecone upload complete.")
 
+    # Local Save: BM25 (Hybrid Search) için yerel kayıt
+    # Bu adım BM25Retriever'ın metinleri okuyabilmesi için gerekir ve şarttır.
+    os.makedirs("data/processed", exist_ok=True)
+    with open("data/processed/chunks.pkl", "wb") as f:
+        pickle.dump(final_chunks, f)
+    print(f"Chunks saved to data/processed/chunks.pkl for BM25.")
+
+    print("\n--- INGESTION COMPLETED SUCCESSFULLY ---")
 
 if __name__ == "__main__":
-    main()
+    run_ingestion() # her bir kaynak için ayrı metot çağrılır.

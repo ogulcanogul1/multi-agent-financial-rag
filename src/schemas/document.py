@@ -2,15 +2,15 @@ import hashlib
 from typing import Optional, Dict, Any
 
 class Document:
-    def __init__(self, content: str, metadata: Optional[Dict[str, Any]] = None, doc_id: str = None):
+    def __init__(self, content: str, metadata: Optional[Dict[str, Any]] = None, id: str = None):
         self.content = content
         self.metadata = metadata or {}
         
         
-        if doc_id is None:
+        if id is None:
             self.id = self._generate_id()
         else:
-            self.id = doc_id
+            self.id = id
 
     def _generate_id(self) -> str:
         """

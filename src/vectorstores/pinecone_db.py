@@ -28,7 +28,7 @@ class PineconeVectorStore(BaseVectorStore):
             }
 
             vectors_to_upsert.append({
-                "id": chunk.chunk_id,
+                "id": chunk.chunk_id, # ekleme işleminde id'lere göre ekler aynı id var ise o id'deki chunkı günceller.
                 "values": chunk.embedding,
                 "metadata": payload
             })

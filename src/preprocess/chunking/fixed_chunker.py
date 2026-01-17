@@ -34,6 +34,8 @@ class FixedChunker:
                         **doc.metadata.copy(), # Döküman metadatasını buraya taşıyoruz
                         "chunk_index": idx,
                         "chunking_strategy": "fixed",
+                        "start_offset": raw_chunk.start_index, # <--- Buraya ekledik
+                        "end_offset": raw_chunk.end_index
                     },
                 )
                 all_chunks.append(chunk)
