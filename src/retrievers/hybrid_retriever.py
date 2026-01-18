@@ -1,6 +1,9 @@
 from typing import List, Dict
 from src.retrievers.base import BaseRetriever
 from src.schemas.scored_chunk import ScoredChunk
+from src.rerankers.base import BaseReranker
+from src.rerankers.flashrank_reranker import FlashRankReranker
+from typing import Optional
 
 class HybridRetriever(BaseRetriever):
     def __init__(
@@ -8,19 +11,25 @@ class HybridRetriever(BaseRetriever):
         vector_retriever: BaseRetriever, 
         bm25_retriever: BaseRetriever, 
         alpha: float = 0.6, # semantic search oranı
-        k: int = 60
+        k: int = 60,
+        reranker:Optional[BaseReranker] = None
     ):
         self.vector_retriever = vector_retriever
         self.bm25_retriever = bm25_retriever
         self.alpha = alpha  # 1.0 = Sadece Vektör, 0.0 = Sadece BM25
         self.k = k
+        self.reranker = reranker if reranker is not None else FlashRankReranker()
+
+
 
     def retrieve(self, query: str, top_k: int = 5) -> List[ScoredChunk]:
         # 1. Her iki taraftan adayları topla
         # Genelde hibrit aramada top_k'dan biraz fazlasını çekeriz ki 
         # harmanlandığında elimizde kaliteli veri kalsın.
-        vector_results = self.vector_retriever.retrieve(query, top_k=top_k * 2)
-        bm25_results = self.bm25_retriever.retrieve(query, top_k=top_k * 2)
+
+        fetch_k = top_k*4
+        vector_results = self.vector_retriever.retrieve(query, top_k=fetch_k)
+        bm25_results = self.bm25_retriever.retrieve(query, top_k=fetch_k)
         
         rrf_scores: Dict[str, float] = {}
         chunk_map: Dict[str, ScoredChunk] = {}
@@ -42,11 +51,20 @@ class HybridRetriever(BaseRetriever):
 
         # 4. Sırala ve Dön
         sorted_ids = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)
+
+        # Aday listesini oluştur (Örn: Rerank için ilk 20 aday)
+        candidate_chunks = [chunk_map[chunk_id] for chunk_id, _ in sorted_ids[:20]]
         
-        final_results = []
-        for chunk_id, score in sorted_ids[:top_k]:
-            scored_chunk = chunk_map[chunk_id]
-            scored_chunk.score = score
-            final_results.append(scored_chunk)
+        # 5. RERANK İŞLEMİ (Opsiyonel Kontrol ile)
+        if self.reranker and candidate_chunks:
+            print(f"--- RERANKING: {len(candidate_chunks)} aday yeniden sıralanıyor ---")
+            # Reranker'a sorguyu ve aday metinlerini gönderiyoruz
+            final_results = self.reranker.rerank(
+                query=query, 
+                chunks=candidate_chunks, 
+                top_k=top_k
+            )
+            return final_results
             
-        return final_results
+        # Eğer reranker yoksa RRF sonucunu dön
+        return candidate_chunks[:top_k]
