@@ -56,11 +56,11 @@ def route_grader(state: AgentState):
     MAX_RETRIES = 2 # Sigorta Sınırı (3 kez dener, olmazsa pes eder)
 
     # 1. Veri İyiyse -> Reporter'a git
-    if status == "good":
+    if status == "yes":
         return "reporter"
     
     # 2. Veri Kötü AMA Hakkımız Var -> Refiner'a git (Döngüye devam)
-    elif retries < MAX_RETRIES:
+    elif status == "no" and retries < MAX_RETRIES:
         return "refiner"
     
     # 3. Veri Kötü VE Hakkımız Bitti -> SİGORTAYI ATTIR (Reporter'a git)

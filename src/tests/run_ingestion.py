@@ -5,9 +5,11 @@ from src.preprocess.cleaner import TextCleaner
 from src.preprocess.chunking.fixed_chunker import FixedChunker 
 from src.embeddings.huggingface import HuggingFaceEmbedder
 from src.vectorstores.pinecone_db import PineconeVectorStore # Bunu ekledik
-from src.settings.configurations import PINECONE_API_KEY,PINECONE_INDEX_NAME 
+from src.settings.configurations import PINECONE_API_KEY,PINECONE_INDEX_NAME,NAMESPACE_FINANCE_RAG_ARCHIVE
 
-def run_ingestion(namespace:str="txt"):
+namespace_finance_rag_archive = "finance-rag-archive"
+
+def run_ingestion(namespace:str):
     # Load
     loader = LocalTextLoader()
     raw_docs = loader.load()
@@ -53,4 +55,4 @@ def run_ingestion(namespace:str="txt"):
     print("\n--- INGESTION COMPLETED SUCCESSFULLY ---")
 
 if __name__ == "__main__":
-    run_ingestion() # her bir kaynak için ayrı metot çağrılır.
+    run_ingestion(NAMESPACE_FINANCE_RAG_ARCHIVE) # her bir kaynak için ayrı metot çağrılır.
