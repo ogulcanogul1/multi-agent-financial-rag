@@ -13,4 +13,5 @@ dependencies = [
     "python-dotenv>=1.2.1",
     "rank-bm25>=0.2.2",
     "sentence-transformers>=5.2.0",
+    "tavily-python>=0.7.19",
 ]
